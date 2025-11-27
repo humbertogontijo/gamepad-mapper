@@ -1,0 +1,91 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "**.spec.js"
+      - ".idea"
+      - ".vscode"
+      - ".dockerignore"
+      - "Dockerfile"
+      - ".gitignore"
+      - ".github/**"
+      - "!.github/workflows/build.yml"
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      # Install Linux build dependencies
+      - name: Install Linux Dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libnss3-dev libatk-bridge2.0-dev libdrm2 libxkbcommon-dev libxcomposite-dev libxdamage-dev libxrandr-dev libgbm-dev libxss1 libasound2-dev
+
+      # macOS Code Signing Setup (only if secrets are provided)
+      - name: Import Apple Certificate (macOS)
+        if: matrix.os == 'macos-latest'
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        continue-on-error: true
+
+      # Set environment variables conditionally (only if secrets exist)
+      - name: Set Signing Environment Variables
+        shell: bash
+        run: |
+          # macOS signing variables
+          APPLE_ID="${{ secrets.APPLE_ID }}"
+          APPLE_APP_SPECIFIC_PASSWORD="${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}"
+          APPLE_TEAM_ID="${{ secrets.APPLE_TEAM_ID }}"
+          WINDOWS_CERT="${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}"
+          WINDOWS_PASSWORD="${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}"
+          
+          if [ -n "$APPLE_ID" ]; then
+            echo "APPLE_ID=$APPLE_ID" >> $GITHUB_ENV
+          fi
+          if [ -n "$APPLE_APP_SPECIFIC_PASSWORD" ]; then
+            echo "APPLE_APP_SPECIFIC_PASSWORD=$APPLE_APP_SPECIFIC_PASSWORD" >> $GITHUB_ENV
+          fi
+          if [ -n "$APPLE_TEAM_ID" ]; then
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID" >> $GITHUB_ENV
+          fi
+          # Windows signing variables (only set if secret exists and not empty)
+          if [ -n "$WINDOWS_CERT" ]; then
+            echo "CSC_LINK=$WINDOWS_CERT" >> $GITHUB_ENV
+          fi
+          if [ -n "$WINDOWS_PASSWORD" ]; then
+            echo "CSC_KEY_PASSWORD=$WINDOWS_PASSWORD" >> $GITHUB_ENV
+          fi
+
+      - name: Build Release Files
+        run: npm run build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release_on_${{ matrix.os }}
+          path: release/
+          retention-days: 5
