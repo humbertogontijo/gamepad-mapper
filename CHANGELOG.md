@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/humbertogontijo/gamepad-mapping/compare/1.0.1...1.0.2) (2025-11-30)
+
+
+### Bug Fixes
+
+* backgroundt throttling ([a17b6f1](https://github.com/humbertogontijo/gamepad-mapping/commit/a17b6f101a6783dd1beabb264c64507b3e628bb1))
+
 ## [1.0.1](https://github.com/humbertogontijo/gamepad-mapping/compare/1.0.0...1.0.1) (2025-11-30)
 
 
