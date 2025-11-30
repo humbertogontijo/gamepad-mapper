@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/humbertogontijo/gamepad-mapping/compare/1.0.0...1.0.1) (2025-11-30)
+
+
+### Bug Fixes
+
+* escape mapping ([89e9aeb](https://github.com/humbertogontijo/gamepad-mapping/commit/89e9aebb713e2b769e77c0016466919dbc0e13fa))
+
 # 1.0.0 (2025-11-29)
 
 
